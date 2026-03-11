@@ -1,0 +1,23 @@
+@HostAddress = http://localhost:6191
+
+GET {{HostAddress}}/
+Accept: application/json
+
+###
+
+POST {{HostAddress}}/mcp
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2025-11-05
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_database_info",
+    "arguments": {
+      "connectionString": "Server=.;Database=master;Integrated Security=true;TrustServerCertificate=true"
+    }
+  }
+}
