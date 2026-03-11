@@ -142,6 +142,88 @@ url = "http://localhost:6191/mcp"
 startup_timeout_sec = 30.0
 ```
 
+## Prompt Example: List All Tables
+
+Use `list_tables` when you want the server to return the tables available in a database.
+
+Natural-language prompt:
+
+```text
+List all user tables in this SQL Server database. Use this connection string:
+Server=tcp:sql-demo.example.net,1433;Database=SalesDb;User ID=app_reader;Password=ReplaceWithStrongPassword123!;Encrypt=True;TrustServerCertificate=False;
+
+Do not include views or system objects. Return the first page with the default page size.
+```
+
+Equivalent MCP payload:
+
+```json
+{
+  "connectionString": "Server=tcp:sql-demo.example.net,1433;Database=SalesDb;User ID=app_reader;Password=ReplaceWithStrongPassword123!;Encrypt=True;TrustServerCertificate=False;",
+  "includeViews": false,
+  "includeSystemObjects": false,
+  "page": 1,
+  "pageSize": "25"
+}
+```
+
+If you want all tables in a single response, request all rows explicitly:
+
+```json
+{
+  "connectionString": "Server=tcp:sql-demo.example.net,1433;Database=SalesDb;User ID=app_reader;Password=ReplaceWithStrongPassword123!;Encrypt=True;TrustServerCertificate=False;",
+  "includeViews": false,
+  "includeSystemObjects": false,
+  "page": 1,
+  "pageSize": "*"
+}
+```
+
+Optional filters for `list_tables`:
+
+- `schema`: restrict results to a schema such as `"dbo"`
+- `includeViews`: set to `true` to include views
+- `includeSystemObjects`: set to `true` to include system-shipped objects
+- `page` and `pageSize`: control pagination
+
+Expected response shape:
+
+```json
+{
+  "ok": true,
+  "operation": "list_tables",
+  "data": [
+    {
+      "schema": "dbo",
+      "name": "Customers",
+      "objectType": "USER_TABLE",
+      "approximateRowCount": 1204
+    },
+    {
+      "schema": "sales",
+      "name": "Orders",
+      "objectType": "USER_TABLE",
+      "approximateRowCount": 45218
+    }
+  ],
+  "target": {
+    "server": "sql-demo.example.net",
+    "database": "SalesDb"
+  },
+  "paging": {
+    "page": 1,
+    "pageSize": "25",
+    "returnedRows": 2,
+    "isUnbounded": false
+  },
+  "metrics": {
+    "durationMs": 18
+  }
+}
+```
+
+Do not publish real credentials in prompts, screenshots, or shared documentation. Keep public examples on realistic placeholders like the one above.
+
 ## Security Notes
 
 - The HTTP transport does not implement authentication by itself
