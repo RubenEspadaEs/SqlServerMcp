@@ -126,10 +126,12 @@ args = [
   "stdio"
 ]
 startup_timeout_sec = 30.0
+```
 
-[mcp_servers.SqlServerMcp.env]
-SqlServerMcp__SkipDmlConfirmation = "false"
-SqlServerMcp__PreviewSampleLimit = "10"
+If you need environment variables for the `stdio` process, set them before launching Codex or register the server with `codex mcp add --env`:
+
+```powershell
+codex mcp add SqlServerMcp --env SqlServerMcp__SkipDmlConfirmation=false --env SqlServerMcp__PreviewSampleLimit=10 -- dotnet run --project D:/absolute/path/to/SqlServerMcp/SqlServerMcp.csproj -- --transport stdio
 ```
 
 For an already running HTTP instance:
