@@ -7,19 +7,32 @@ using SqlServerMcp.Validation;
 
 namespace SqlServerMcp.Application;
 
+/// <summary>
+/// Defines guarded data change operations exposed by the MCP tools.
+/// </summary>
 public interface ISqlMutationService
 {
+    /// <summary>
+    /// Previews the effect of a supported UPDATE or DELETE statement.
+    /// </summary>
     Task<(MutationPreviewResult Result, TargetInfo Target)> PreviewAsync(PreviewDataChangeRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Executes a previously previewed UPDATE or DELETE statement.
+    /// </summary>
     Task<(MutationExecutionResult Result, TargetInfo Target)> ExecuteAsync(ExecuteDataChangeRequest request, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Implements guarded data change operations for the MCP tools.
+/// </summary>
 public sealed class SqlMutationService(
     ISqlConnectionFactory connectionFactory,
     ISqlScriptAnalyzer scriptAnalyzer,
     IPreviewTokenStore previewTokenStore,
     IOptions<SqlServerMcpOptions> options) : ISqlMutationService
 {
+    /// <inheritdoc />
     public async Task<(MutationPreviewResult Result, TargetInfo Target)> PreviewAsync(PreviewDataChangeRequest request, CancellationToken cancellationToken)
     {
         var analysis = scriptAnalyzer.AnalyzeDataChange(request.Sql);
@@ -58,6 +71,7 @@ public sealed class SqlMutationService(
             new TargetInfo(connection.DataSource, connection.Database));
     }
 
+    /// <inheritdoc />
     public async Task<(MutationExecutionResult Result, TargetInfo Target)> ExecuteAsync(ExecuteDataChangeRequest request, CancellationToken cancellationToken)
     {
         var analysis = scriptAnalyzer.AnalyzeDataChange(request.Sql);

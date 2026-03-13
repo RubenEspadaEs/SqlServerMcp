@@ -6,38 +6,68 @@ using SqlServerMcp.Validation;
 
 namespace SqlServerMcp.Application;
 
+/// <summary>
+/// Defines administrative SQL Server operations exposed by the MCP tools.
+/// </summary>
 public interface ISqlAdminService
 {
+    /// <summary>
+    /// Creates a table using a typed contract.
+    /// </summary>
     Task<(AdminExecutionResult Result, TargetInfo Target)> CreateTableAsync(CreateTableRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Alters a table using a typed sequence of operations.
+    /// </summary>
     Task<(AdminExecutionResult Result, TargetInfo Target)> AlterTableAsync(AlterTableRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Creates a SQL Server login.
+    /// </summary>
     Task<(AdminExecutionResult Result, TargetInfo Target)> CreateLoginAsync(CreateLoginRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Creates a database user and optional role memberships.
+    /// </summary>
     Task<(AdminExecutionResult Result, TargetInfo Target)> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Grants a role membership to a principal.
+    /// </summary>
     Task<(AdminExecutionResult Result, TargetInfo Target)> GrantRoleMembershipAsync(GrantRoleMembershipRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Executes a raw administrative DDL or DCL statement.
+    /// </summary>
     Task<(AdminExecutionResult Result, TargetInfo Target)> ExecuteAdminSqlAsync(ExecuteAdminSqlRequest request, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Implements administrative SQL Server operations for the MCP tools.
+/// </summary>
 public sealed class SqlAdminService(ISqlConnectionFactory connectionFactory, ISqlScriptAnalyzer scriptAnalyzer) : ISqlAdminService
 {
+    /// <inheritdoc />
     public Task<(AdminExecutionResult Result, TargetInfo Target)> CreateTableAsync(CreateTableRequest request, CancellationToken cancellationToken) =>
         ExecuteAdminCommandAsync(request.ConnectionString, request.CommandTimeoutSeconds, BuildCreateTableSql(request), null, cancellationToken);
 
+    /// <inheritdoc />
     public Task<(AdminExecutionResult Result, TargetInfo Target)> AlterTableAsync(AlterTableRequest request, CancellationToken cancellationToken) =>
         ExecuteAdminCommandAsync(request.ConnectionString, request.CommandTimeoutSeconds, BuildAlterTableSql(request), null, cancellationToken);
 
+    /// <inheritdoc />
     public Task<(AdminExecutionResult Result, TargetInfo Target)> CreateLoginAsync(CreateLoginRequest request, CancellationToken cancellationToken) =>
         ExecuteAdminCommandAsync(request.ConnectionString, request.CommandTimeoutSeconds, BuildCreateLoginSql(request), null, cancellationToken);
 
+    /// <inheritdoc />
     public Task<(AdminExecutionResult Result, TargetInfo Target)> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken) =>
         ExecuteAdminCommandAsync(request.ConnectionString, request.CommandTimeoutSeconds, BuildCreateUserSql(request), null, cancellationToken);
 
+    /// <inheritdoc />
     public Task<(AdminExecutionResult Result, TargetInfo Target)> GrantRoleMembershipAsync(GrantRoleMembershipRequest request, CancellationToken cancellationToken) =>
         ExecuteAdminCommandAsync(request.ConnectionString, request.CommandTimeoutSeconds, BuildGrantRoleSql(request), null, cancellationToken);
 
+    /// <inheritdoc />
     public Task<(AdminExecutionResult Result, TargetInfo Target)> ExecuteAdminSqlAsync(ExecuteAdminSqlRequest request, CancellationToken cancellationToken)
     {
         scriptAnalyzer.AnalyzeAdmin(request.Sql);
@@ -66,18 +96,22 @@ public sealed class SqlAdminService(ISqlConnectionFactory connectionFactory, ISq
 
     private static string BuildCreateTableSql(CreateTableRequest request)
     {
-        if (request.Columns.Count == 0)
+        var columns = request.Columns ?? [];
+        var indexes = request.Indexes ?? [];
+        var foreignKeys = request.ForeignKeys ?? [];
+
+        if (columns.Count == 0)
         {
             throw new InvalidOperationException("At least one column is required.");
         }
 
-        var columnSql = request.Columns.Select(BuildColumnSql).ToList();
+        var columnSql = columns.Select(BuildColumnSql).ToList();
 
         if (request.PrimaryKey is not null)
         {
-            var columns = string.Join(", ", request.PrimaryKey.Columns.Select(SqlIdentifier.Quote));
+            var primaryKeyColumns = string.Join(", ", request.PrimaryKey.Columns.Select(SqlIdentifier.Quote));
             var clustered = request.PrimaryKey.Clustered ? "CLUSTERED" : "NONCLUSTERED";
-            columnSql.Add($"CONSTRAINT {SqlIdentifier.Quote(request.PrimaryKey.Name)} PRIMARY KEY {clustered} ({columns})");
+            columnSql.Add($"CONSTRAINT {SqlIdentifier.Quote(request.PrimaryKey.Name)} PRIMARY KEY {clustered} ({primaryKeyColumns})");
         }
 
         var builder = new StringBuilder();
@@ -85,26 +119,26 @@ public sealed class SqlAdminService(ISqlConnectionFactory connectionFactory, ISq
         builder.AppendLine($"    {string.Join("," + Environment.NewLine + "    ", columnSql)}");
         builder.AppendLine(");");
 
-        foreach (var index in request.Indexes)
+        foreach (var index in indexes)
         {
             var unique = index.IsUnique ? "UNIQUE " : string.Empty;
             var clustered = index.IsClustered ? "CLUSTERED" : "NONCLUSTERED";
             builder.AppendLine($"CREATE {unique}{clustered} INDEX {SqlIdentifier.Quote(index.Name)} ON {SqlIdentifier.Qualify(request.Schema, request.TableName)} ({string.Join(", ", index.Columns.Select(SqlIdentifier.Quote))});");
         }
 
-        foreach (var foreignKey in request.ForeignKeys)
+        foreach (var foreignKey in foreignKeys)
         {
             builder.Append($"ALTER TABLE {SqlIdentifier.Qualify(request.Schema, request.TableName)} ADD CONSTRAINT {SqlIdentifier.Quote(foreignKey.Name)} FOREIGN KEY ({string.Join(", ", foreignKey.Columns.Select(SqlIdentifier.Quote))}) ");
             builder.Append($"REFERENCES {SqlIdentifier.Qualify(foreignKey.ReferenceSchema, foreignKey.ReferenceTable)} ({string.Join(", ", foreignKey.ReferenceColumns.Select(SqlIdentifier.Quote))})");
 
             if (!string.IsNullOrWhiteSpace(foreignKey.OnDeleteAction))
             {
-                builder.Append($" ON DELETE {foreignKey.OnDeleteAction}");
+                builder.Append($" ON DELETE {NormalizeReferentialAction(foreignKey.OnDeleteAction)}");
             }
 
             if (!string.IsNullOrWhiteSpace(foreignKey.OnUpdateAction))
             {
-                builder.Append($" ON UPDATE {foreignKey.OnUpdateAction}");
+                builder.Append($" ON UPDATE {NormalizeReferentialAction(foreignKey.OnUpdateAction)}");
             }
 
             builder.AppendLine(";");
@@ -238,13 +272,16 @@ public sealed class SqlAdminService(ISqlConnectionFactory connectionFactory, ISq
 
         builder.AppendLine(";");
 
-        foreach (var role in request.Roles)
+        foreach (var role in request.Roles ?? [])
         {
             builder.AppendLine($"ALTER ROLE {SqlIdentifier.Quote(role)} ADD MEMBER {SqlIdentifier.Quote(request.UserName)};");
         }
 
         return builder.ToString();
     }
+
+    private static string NormalizeReferentialAction(string action) =>
+        action.Replace("_", " ", StringComparison.Ordinal).Trim();
 
     private static string BuildGrantRoleSql(GrantRoleMembershipRequest request)
     {

@@ -5,21 +5,43 @@ using SqlServerMcp.Infrastructure.Sql;
 
 namespace SqlServerMcp.Application;
 
+/// <summary>
+/// Defines metadata-oriented SQL Server operations exposed by the MCP tools.
+/// </summary>
 public interface ISqlMetadataService
 {
+    /// <summary>
+    /// Returns general information about the current SQL Server instance and database.
+    /// </summary>
     Task<(DatabaseInfo Info, TargetInfo Target)> GetDatabaseInfoAsync(DatabaseInfoRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Lists the schemas available in the current database.
+    /// </summary>
     Task<(IReadOnlyList<SchemaInfo> Schemas, TargetInfo Target, PagingInfo Paging)> ListSchemasAsync(ListSchemasRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Lists tables and optionally views in the current database.
+    /// </summary>
     Task<(IReadOnlyList<TableInfo> Tables, TargetInfo Target, PagingInfo Paging)> ListTablesAsync(ListTablesRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Returns detailed metadata for a single table.
+    /// </summary>
     Task<(TableDetails Details, TargetInfo Target)> GetTableDetailsAsync(TableDetailsRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Returns the SQL definition of a database object when one is available.
+    /// </summary>
     Task<(ObjectDefinitionInfo Definition, TargetInfo Target)> GetObjectDefinitionAsync(ObjectDefinitionRequest request, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Implements metadata-oriented SQL Server operations for the MCP tools.
+/// </summary>
 public sealed class SqlMetadataService(ISqlConnectionFactory connectionFactory) : ISqlMetadataService
 {
+    /// <inheritdoc />
     public async Task<(DatabaseInfo Info, TargetInfo Target)> GetDatabaseInfoAsync(DatabaseInfoRequest request, CancellationToken cancellationToken)
     {
         await using var connection = await connectionFactory.OpenAsync(request.ConnectionString, request.CommandTimeoutSeconds, cancellationToken).ConfigureAwait(false);
@@ -54,6 +76,7 @@ public sealed class SqlMetadataService(ISqlConnectionFactory connectionFactory) 
         return (info, new TargetInfo(connection.DataSource, connection.Database));
     }
 
+    /// <inheritdoc />
     public async Task<(IReadOnlyList<SchemaInfo> Schemas, TargetInfo Target, PagingInfo Paging)> ListSchemasAsync(ListSchemasRequest request, CancellationToken cancellationToken)
     {
         var pagination = PaginationParser.Parse(request.Page, request.PageSize);
@@ -78,6 +101,7 @@ public sealed class SqlMetadataService(ISqlConnectionFactory connectionFactory) 
         return (data, new TargetInfo(connection.DataSource, connection.Database), new PagingInfo(pagination.Page, pagination.PageSizeLabel, data.Length, pagination.IsUnbounded));
     }
 
+    /// <inheritdoc />
     public async Task<(IReadOnlyList<TableInfo> Tables, TargetInfo Target, PagingInfo Paging)> ListTablesAsync(ListTablesRequest request, CancellationToken cancellationToken)
     {
         var pagination = PaginationParser.Parse(request.Page, request.PageSize);
@@ -117,6 +141,7 @@ public sealed class SqlMetadataService(ISqlConnectionFactory connectionFactory) 
         return (data, new TargetInfo(connection.DataSource, connection.Database), new PagingInfo(pagination.Page, pagination.PageSizeLabel, data.Length, pagination.IsUnbounded));
     }
 
+    /// <inheritdoc />
     public async Task<(TableDetails Details, TargetInfo Target)> GetTableDetailsAsync(TableDetailsRequest request, CancellationToken cancellationToken)
     {
         await using var connection = await connectionFactory.OpenAsync(request.ConnectionString, request.CommandTimeoutSeconds, cancellationToken).ConfigureAwait(false);
@@ -129,6 +154,7 @@ public sealed class SqlMetadataService(ISqlConnectionFactory connectionFactory) 
         return (new TableDetails(request.Schema, request.TableName, rowCount, columns, indexes, foreignKeys), new TargetInfo(connection.DataSource, connection.Database));
     }
 
+    /// <inheritdoc />
     public async Task<(ObjectDefinitionInfo Definition, TargetInfo Target)> GetObjectDefinitionAsync(ObjectDefinitionRequest request, CancellationToken cancellationToken)
     {
         await using var connection = await connectionFactory.OpenAsync(request.ConnectionString, request.CommandTimeoutSeconds, cancellationToken).ConfigureAwait(false);

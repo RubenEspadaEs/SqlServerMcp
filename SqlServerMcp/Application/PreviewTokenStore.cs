@@ -5,18 +5,31 @@ using System.Text.Json;
 
 namespace SqlServerMcp.Application;
 
+/// <summary>
+/// Manages preview tokens used to validate guarded data changes.
+/// </summary>
 public interface IPreviewTokenStore
 {
+    /// <summary>
+    /// Creates a preview token for the current SQL statement and execution options.
+    /// </summary>
     string Create(string connectionString, string normalizedSql, IReadOnlyDictionary<string, JsonElement>? parameters, bool allowAffectAllRows);
 
+    /// <summary>
+    /// Validates that a preview token still matches the requested SQL statement and execution options.
+    /// </summary>
     bool Validate(string token, string connectionString, string normalizedSql, IReadOnlyDictionary<string, JsonElement>? parameters, bool allowAffectAllRows);
 }
 
+/// <summary>
+/// Stores preview tokens in memory for the lifetime of the process.
+/// </summary>
 public sealed class InMemoryPreviewTokenStore : IPreviewTokenStore
 {
     private static readonly TimeSpan Expiration = TimeSpan.FromMinutes(10);
     private readonly ConcurrentDictionary<string, PreviewTokenState> _tokens = new();
 
+    /// <inheritdoc />
     public string Create(string connectionString, string normalizedSql, IReadOnlyDictionary<string, JsonElement>? parameters, bool allowAffectAllRows)
     {
         CleanupExpiredTokens();
@@ -29,6 +42,7 @@ public sealed class InMemoryPreviewTokenStore : IPreviewTokenStore
         return token;
     }
 
+    /// <inheritdoc />
     public bool Validate(string token, string connectionString, string normalizedSql, IReadOnlyDictionary<string, JsonElement>? parameters, bool allowAffectAllRows)
     {
         CleanupExpiredTokens();

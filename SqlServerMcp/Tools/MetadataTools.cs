@@ -5,8 +5,14 @@ using SqlServerMcp.Contracts;
 
 namespace SqlServerMcp.Tools;
 
+/// <summary>
+/// Exposes MCP tools for SQL Server metadata inspection.
+/// </summary>
 internal sealed class MetadataTools
 {
+    /// <summary>
+    /// Returns basic information about the current SQL Server instance and active database.
+    /// </summary>
     [McpServerTool, Description("Returns current SQL Server and database information.")]
     public static Task<JsonToolResponse> GetDatabaseInfo(
         ISqlMetadataService service,
@@ -21,6 +27,9 @@ internal sealed class MetadataTools
             },
             cancellationToken);
 
+    /// <summary>
+    /// Lists the schemas available in the current database.
+    /// </summary>
     [McpServerTool, Description("Lists database schemas.")]
     public static Task<JsonToolResponse> ListSchemas(
         ISqlMetadataService service,
@@ -35,6 +44,9 @@ internal sealed class MetadataTools
             },
             cancellationToken);
 
+    /// <summary>
+    /// Lists tables in the current database and can optionally include views and system objects.
+    /// </summary>
     [McpServerTool, Description("Lists tables and optionally views.")]
     public static Task<JsonToolResponse> ListTables(
         ISqlMetadataService service,
@@ -49,6 +61,9 @@ internal sealed class MetadataTools
             },
             cancellationToken);
 
+    /// <summary>
+    /// Returns detailed metadata for a specific table, including columns, indexes, and foreign keys.
+    /// </summary>
     [McpServerTool, Description("Returns table details including columns, indexes, and foreign keys.")]
     public static Task<JsonToolResponse> GetTableDetails(
         ISqlMetadataService service,
@@ -63,6 +78,9 @@ internal sealed class MetadataTools
             },
             cancellationToken);
 
+    /// <summary>
+    /// Returns the stored SQL definition of an object when SQL Server exposes one.
+    /// </summary>
     [McpServerTool, Description("Returns the SQL definition for an object when SQL Server stores one.")]
     public static Task<JsonToolResponse> GetObjectDefinition(
         ISqlMetadataService service,

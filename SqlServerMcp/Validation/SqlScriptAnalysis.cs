@@ -1,5 +1,8 @@
 namespace SqlServerMcp.Validation;
 
+/// <summary>
+/// Identifies the supported SQL statement categories handled by the server.
+/// </summary>
 public enum SqlScriptKind
 {
     Query,
@@ -7,6 +10,9 @@ public enum SqlScriptKind
     Admin
 }
 
+/// <summary>
+/// Represents the normalized analysis of a SQL statement.
+/// </summary>
 public sealed record SqlScriptAnalysis(
     SqlScriptKind Kind,
     string NormalizedSql,

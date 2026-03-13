@@ -39,7 +39,7 @@ internal static class SqlDataMapper
         var row = new Dictionary<string, object?>(record.FieldCount, StringComparer.OrdinalIgnoreCase);
         for (var index = 0; index < record.FieldCount; index++)
         {
-            row[record.GetName(index)] = record.IsDBNull(index) ? null : record.GetValue(index);
+            row[record.GetName(index)] = record.IsDBNull(index) ? null : NormalizeDbValue(record.GetValue(index));
         }
 
         return row;
@@ -86,4 +86,17 @@ internal static class SqlDataMapper
             _ => element.GetRawText()
         };
     }
+
+    private static object? NormalizeDbValue(object value) =>
+        value switch
+        {
+            DateOnly dateOnly => dateOnly.ToString("O"),
+            TimeOnly timeOnly => timeOnly.ToString("O"),
+            DateTimeOffset dateTimeOffset => dateTimeOffset.ToString("O"),
+            DateTime dateTime => dateTime.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc).ToString("O")
+                : dateTime.ToString("O"),
+            byte[] bytes => Convert.ToBase64String(bytes),
+            _ => value
+        };
 }

@@ -3,15 +3,30 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace SqlServerMcp.Validation;
 
+/// <summary>
+/// Analyzes SQL statements and validates that they match the supported categories.
+/// </summary>
 public interface ISqlScriptAnalyzer
 {
+    /// <summary>
+    /// Validates and normalizes a single read-only SELECT or WITH statement.
+    /// </summary>
     SqlScriptAnalysis AnalyzeSelect(string sql);
 
+    /// <summary>
+    /// Validates and normalizes a supported UPDATE or DELETE statement.
+    /// </summary>
     SqlScriptAnalysis AnalyzeDataChange(string sql);
 
+    /// <summary>
+    /// Validates and normalizes a single administrative DDL or DCL statement.
+    /// </summary>
     SqlScriptAnalysis AnalyzeAdmin(string sql);
 }
 
+/// <summary>
+/// Default implementation of <see cref="ISqlScriptAnalyzer"/>.
+/// </summary>
 public sealed class SqlScriptAnalyzer : ISqlScriptAnalyzer
 {
     private static readonly Regex UpdateRegex = new(
@@ -22,6 +37,7 @@ public sealed class SqlScriptAnalyzer : ISqlScriptAnalyzer
         @"^\s*DELETE\s+(?:TOP\s*\(\s*\d+\s*\)\s+)?FROM\s+(?<target>(?:\[[^\]]+\]|[A-Za-z_][\w$#]*)(?:\.(?:\[[^\]]+\]|[A-Za-z_][\w$#]*))?)\s*(?:WHERE\s+(?<where>.+?))?\s*;?\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
+    /// <inheritdoc />
     public SqlScriptAnalysis AnalyzeSelect(string sql)
     {
         var statement = ParseSingleStatement(sql);
@@ -33,6 +49,7 @@ public sealed class SqlScriptAnalyzer : ISqlScriptAnalyzer
         return new SqlScriptAnalysis(SqlScriptKind.Query, Normalize(sql));
     }
 
+    /// <inheritdoc />
     public SqlScriptAnalysis AnalyzeDataChange(string sql)
     {
         var statement = ParseSingleStatement(sql);
@@ -45,6 +62,7 @@ public sealed class SqlScriptAnalyzer : ISqlScriptAnalyzer
         };
     }
 
+    /// <inheritdoc />
     public SqlScriptAnalysis AnalyzeAdmin(string sql)
     {
         var statement = ParseSingleStatement(sql);

@@ -2,8 +2,14 @@ using SqlServerMcp.Contracts;
 
 namespace SqlServerMcp.Application;
 
+/// <summary>
+/// Builds the standard JSON envelope returned by every MCP tool.
+/// </summary>
 public static class ToolExecution
 {
+    /// <summary>
+    /// Executes a tool action and wraps the result or exception in the standard response envelope.
+    /// </summary>
     public static async Task<JsonToolResponse> ExecuteAsync(
         string operation,
         Func<CancellationToken, Task<(object? Data, TargetInfo? Target, PagingInfo? Paging)>> action,

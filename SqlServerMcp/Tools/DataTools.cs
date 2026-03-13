@@ -5,8 +5,14 @@ using SqlServerMcp.Contracts;
 
 namespace SqlServerMcp.Tools;
 
+/// <summary>
+/// Exposes MCP tools for read queries and guarded data changes.
+/// </summary>
 internal sealed class DataTools
 {
+    /// <summary>
+    /// Executes a single read-only SQL query and returns the results as JSON rows.
+    /// </summary>
     [McpServerTool, Description("Executes a single SELECT or WITH statement and returns JSON rows.")]
     public static Task<JsonToolResponse> QuerySql(
         ISqlQueryService service,
@@ -21,6 +27,9 @@ internal sealed class DataTools
             },
             cancellationToken);
 
+    /// <summary>
+    /// Previews the effect of a supported UPDATE or DELETE statement before execution.
+    /// </summary>
     [McpServerTool, Description("Previews a simple UPDATE or DELETE by returning affected row count and a JSON sample.")]
     public static Task<JsonToolResponse> PreviewDataChange(
         ISqlMutationService service,
@@ -35,6 +44,9 @@ internal sealed class DataTools
             },
             cancellationToken);
 
+    /// <summary>
+    /// Executes a previously previewed UPDATE or DELETE statement.
+    /// </summary>
     [McpServerTool, Description("Executes a previously previewed UPDATE or DELETE.")]
     public static Task<JsonToolResponse> ExecuteDataChange(
         ISqlMutationService service,

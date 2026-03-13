@@ -5,13 +5,23 @@ using SqlServerMcp.Validation;
 
 namespace SqlServerMcp.Application;
 
+/// <summary>
+/// Defines read-only query operations exposed by the MCP tools.
+/// </summary>
 public interface ISqlQueryService
 {
+    /// <summary>
+    /// Executes a single read-only SQL statement and returns the results as JSON rows.
+    /// </summary>
     Task<(QueryResult Result, TargetInfo Target, PagingInfo Paging)> ExecuteQueryAsync(QuerySqlRequest request, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Implements read-only query operations for the MCP tools.
+/// </summary>
 public sealed class SqlQueryService(ISqlConnectionFactory connectionFactory, ISqlScriptAnalyzer scriptAnalyzer) : ISqlQueryService
 {
+    /// <inheritdoc />
     public async Task<(QueryResult Result, TargetInfo Target, PagingInfo Paging)> ExecuteQueryAsync(QuerySqlRequest request, CancellationToken cancellationToken)
     {
         scriptAnalyzer.AnalyzeSelect(request.Sql);

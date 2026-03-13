@@ -3,6 +3,9 @@ using SqlServerMcp.Contracts;
 
 namespace SqlServerMcp.Serialization;
 
+/// <summary>
+/// Source-generated JSON serialization context used by the MCP server.
+/// </summary>
 [JsonSerializable(typeof(JsonToolResponse))]
 [JsonSerializable(typeof(DatabaseInfoRequest))]
 [JsonSerializable(typeof(ListSchemasRequest))]

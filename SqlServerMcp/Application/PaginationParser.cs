@@ -1,7 +1,13 @@
 namespace SqlServerMcp.Application;
 
+/// <summary>
+/// Parses page arguments into a normalized paging request.
+/// </summary>
 public static class PaginationParser
 {
+    /// <summary>
+    /// Converts the raw page inputs into a normalized paging request.
+    /// </summary>
     public static PaginationRequest Parse(int page, string? pageSize)
     {
         var normalizedPage = page <= 0 ? 1 : page;
@@ -21,4 +27,7 @@ public static class PaginationParser
     }
 }
 
+/// <summary>
+/// Represents a normalized paging request ready to be applied during data reads.
+/// </summary>
 public sealed record PaginationRequest(int Page, string PageSizeLabel, int Offset, int Limit, bool IsUnbounded);

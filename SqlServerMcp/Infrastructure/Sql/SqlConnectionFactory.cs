@@ -2,13 +2,23 @@ using Microsoft.Data.SqlClient;
 
 namespace SqlServerMcp.Infrastructure.Sql;
 
+/// <summary>
+/// Opens SQL Server connections using the connection string supplied by each request.
+/// </summary>
 public interface ISqlConnectionFactory
 {
+    /// <summary>
+    /// Opens and returns a SQL Server connection.
+    /// </summary>
     Task<SqlConnection> OpenAsync(string connectionString, int? commandTimeoutSeconds, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Default implementation of <see cref="ISqlConnectionFactory"/>.
+/// </summary>
 public sealed class SqlConnectionFactory : ISqlConnectionFactory
 {
+    /// <inheritdoc />
     public async Task<SqlConnection> OpenAsync(string connectionString, int? commandTimeoutSeconds, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
